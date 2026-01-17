@@ -13,7 +13,7 @@ pipeline {
     }
     
     parameters {
-        booleanParam(name: 'RUN_INTEGRATION_TESTS', defaultValue: true, description: 'Run integration tests with real Hugging Face API')
+        choice(name: 'TEST_SCOPE', choices: ['All Tests (Mock + Real API)', 'Mock Tests Only', 'Real API Tests Only'], description: 'Select which tests to run')
         booleanParam(name: 'FORCE_BROWSER_INSTALL', defaultValue: false, description: 'Force reinstall Playwright browsers')
     }
     
@@ -57,35 +57,47 @@ pipeline {
         }
         
         stage('Run Schema Tests') {
+            when {
+                expression { return params.TEST_SCOPE != 'Real API Tests Only' }
+            }
             steps {
                 bat 'npx playwright test tests/ai-goal-coach/schema.spec.ts --reporter=list'
             }
         }
         
         stage('Run Adversarial Tests') {
+            when {
+                expression { return params.TEST_SCOPE != 'Real API Tests Only' }
+            }
             steps {
                 bat 'npx playwright test tests/ai-goal-coach/adversarial.spec.ts --reporter=list'
             }
         }
         
         stage('Run Functional Tests') {
+            when {
+                expression { return params.TEST_SCOPE != 'Real API Tests Only' }
+            }
             steps {
                 bat 'npx playwright test tests/ai-goal-coach/functional.spec.ts --reporter=list'
             }
         }
         
         stage('Run Performance Tests') {
+            when {
+                expression { return params.TEST_SCOPE != 'Real API Tests Only' }
+            }
             steps {
                 bat 'npx playwright test tests/ai-goal-coach/performance.spec.ts --reporter=list'
             }
         }
         
         stage('Run Integration Tests (Real API)') {
-            // Only run if RUN_INTEGRATION_TESTS is true
+            // Only run if TEST_SCOPE includes Real API tests
             // Skip gracefully if HF_TOKEN credential doesn't exist
             when {
                 expression {
-                    return params.RUN_INTEGRATION_TESTS == true
+                    return params.TEST_SCOPE != 'Mock Tests Only'
                 }
             }
             environment {
@@ -105,9 +117,17 @@ pipeline {
             }
         }
         
-        stage('Run All Tests with Report') {
+        stage('Generate Report') {
             steps {
-                bat 'npx playwright test tests/ai-goal-coach/ --reporter=html,junit'
+                script {
+                    if (params.TEST_SCOPE == 'Real API Tests Only') {
+                        bat 'npx playwright test tests/ai-goal-coach/integration.spec.ts --reporter=html,junit || exit 0'
+                    } else if (params.TEST_SCOPE == 'Mock Tests Only') {
+                        bat 'npx playwright test tests/ai-goal-coach/schema.spec.ts tests/ai-goal-coach/adversarial.spec.ts tests/ai-goal-coach/functional.spec.ts tests/ai-goal-coach/performance.spec.ts --reporter=html,junit'
+                    } else {
+                        bat 'npx playwright test tests/ai-goal-coach/ --reporter=html,junit'
+                    }
+                }
             }
         }
     }
