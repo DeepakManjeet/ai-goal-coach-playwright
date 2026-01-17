@@ -7,12 +7,14 @@ pipeline {
     
     environment {
         CI = 'true'
-        PLAYWRIGHT_BROWSERS_PATH = '0' // Use default browser path
+        // Cache browsers in a persistent location outside workspace
+        PLAYWRIGHT_BROWSERS_PATH = 'C:\\playwright-browsers'
         RUN_INTEGRATION_TESTS = 'true' // Set to 'false' to skip real API tests
     }
     
     parameters {
         booleanParam(name: 'RUN_INTEGRATION_TESTS', defaultValue: true, description: 'Run integration tests with real Hugging Face API')
+        booleanParam(name: 'FORCE_BROWSER_INSTALL', defaultValue: false, description: 'Force reinstall Playwright browsers')
     }
     
     options {
@@ -35,8 +37,22 @@ pipeline {
         }
         
         stage('Install Playwright Browsers') {
+            when {
+                anyOf {
+                    // Only install if browsers don't exist OR force install is true
+                    expression { return params.FORCE_BROWSER_INSTALL == true }
+                    expression { return !fileExists("${env.PLAYWRIGHT_BROWSERS_PATH}\\chromium-*") }
+                }
+            }
             steps {
                 bat 'npx playwright install --with-deps chromium'
+            }
+        }
+        
+        stage('Verify Browsers') {
+            steps {
+                // Quick check that browsers are available
+                bat 'npx playwright --version'
             }
         }
         
