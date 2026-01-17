@@ -2,22 +2,22 @@
  * Integration Tests for Real AI API
  * 
  * These tests run against the actual Hugging Face API (or other configured AI API).
- * They are skipped by default unless USE_REAL_API=true and HF_TOKEN is set.
+ * Requires USE_REAL_API=true and HF_TOKEN environment variables to be set.
  * 
  * Run with:
  *   USE_REAL_API=true HF_TOKEN=your_token npx playwright test tests/ai-goal-coach/integration.spec.ts
  */
 
 import { test, expect } from '@playwright/test';
-import { RealGoalCoachAPI, isRealApiEnabled, validateApiToken } from './api/realApiClient';
+import { RealGoalCoachAPI, validateApiToken } from './api/realApiClient';
 import { validateSchema } from './utils/schemaValidator';
 
-// Skip all tests if real API is not configured
-test.beforeEach(async ({}, testInfo) => {
-  if (!isRealApiEnabled()) {
-    const validation = validateApiToken();
-    testInfo.skip(true, `Skipping: ${validation.message}. Set USE_REAL_API=true and valid HF_TOKEN.`);
-  }
+// Log API configuration status at the start
+test.beforeAll(() => {
+  const validation = validateApiToken();
+  console.log(`API Token Status: ${validation.message}`);
+  console.log(`USE_REAL_API: ${process.env.USE_REAL_API}`);
+  console.log(`HF_TOKEN present: ${process.env.HF_TOKEN ? 'Yes' : 'No'}`);
 });
 
 test.describe('Real API Integration Tests', () => {
