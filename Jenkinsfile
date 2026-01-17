@@ -88,15 +88,14 @@ pipeline {
                     return params.RUN_INTEGRATION_TESTS == true
                 }
             }
+            environment {
+                USE_REAL_API = 'true'
+            }
             steps {
                 script {
                     try {
                         withCredentials([string(credentialsId: 'HF_TOKEN', variable: 'HF_TOKEN')]) {
-                            bat """
-                                set HF_TOKEN=%HF_TOKEN%
-                                set USE_REAL_API=true
-                                npx playwright test tests/ai-goal-coach/integration.spec.ts --reporter=list
-                            """
+                            bat 'npx playwright test tests/ai-goal-coach/integration.spec.ts --reporter=list'
                         }
                     } catch (Exception e) {
                         echo "⚠️ Skipping Integration Tests: HF_TOKEN credential not configured in Jenkins"
