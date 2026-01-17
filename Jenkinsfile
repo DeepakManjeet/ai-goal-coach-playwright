@@ -8,6 +8,11 @@ pipeline {
     environment {
         CI = 'true'
         PLAYWRIGHT_BROWSERS_PATH = '0' // Use default browser path
+        RUN_INTEGRATION_TESTS = 'true' // Set to 'false' to skip real API tests
+    }
+    
+    parameters {
+        booleanParam(name: 'RUN_INTEGRATION_TESTS', defaultValue: true, description: 'Run integration tests with real Hugging Face API')
     }
     
     options {
@@ -56,6 +61,24 @@ pipeline {
         stage('Run Performance Tests') {
             steps {
                 bat 'npx playwright test tests/ai-goal-coach/performance.spec.ts --reporter=list'
+            }
+        }
+        
+        stage('Run Integration Tests (Real API)') {
+            // Only run if HF_TOKEN credential exists
+            when {
+                expression {
+                    return env.RUN_INTEGRATION_TESTS == 'true'
+                }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'HF_TOKEN', variable: 'HF_TOKEN')]) {
+                    bat """
+                        set HF_TOKEN=%HF_TOKEN%
+                        set USE_REAL_API=true
+                        npx playwright test tests/ai-goal-coach/integration.spec.ts --reporter=list
+                    """
+                }
             }
         }
         

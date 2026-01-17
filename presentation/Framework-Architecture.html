@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Goal Coach - Framework Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            overflow: hidden;
+        }
+        .slide {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            padding: 50px 60px;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+        }
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #58a6ff, #a371f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        h2 {
+            font-size: 2.2em;
+            margin-bottom: 30px;
+            color: #58a6ff;
+            border-bottom: 2px solid #30363d;
+            padding-bottom: 15px;
+        }
+        h3 {
+            font-size: 1.5em;
+            color: #a371f7;
+            margin: 15px 0 10px 0;
+        }
+        p, li {
+            font-size: 1.2em;
+            line-height: 1.7;
+            color: #c9d1d9;
+        }
+        .tree {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 1.1em;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin: 15px 0;
+            line-height: 1.6;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+        .tree .folder {
+            color: #58a6ff;
+            font-weight: bold;
+        }
+        .tree .file {
+            color: #7ee787;
+        }
+        .tree .config {
+            color: #ffa657;
+        }
+        .tree .test {
+            color: #ff7b72;
+        }
+        .tree .doc {
+            color: #d2a8ff;
+        }
+        .two-column {
+            display: flex;
+            gap: 40px;
+            margin-top: 20px;
+            flex: 1;
+        }
+        .column {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .file-card {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin: 10px 0;
+        }
+        .file-card h4 {
+            color: #58a6ff;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .file-card p {
+            font-size: 1em;
+            color: #8b949e;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge-test { background: #ff7b72; color: #0d1117; }
+        .badge-config { background: #ffa657; color: #0d1117; }
+        .badge-mock { background: #a371f7; color: #0d1117; }
+        .badge-type { background: #58a6ff; color: #0d1117; }
+        .badge-doc { background: #7ee787; color: #0d1117; }
+        .badge-util { background: #79c0ff; color: #0d1117; }
+        .highlight {
+            color: #58a6ff;
+            font-weight: bold;
+        }
+        .code-block {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 15px 20px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.95em;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .nav {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        .nav button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #238636;
+            color: white;
+            transition: all 0.3s;
+        }
+        .nav button:hover {
+            background: #2ea043;
+            transform: scale(1.05);
+        }
+        .slide-counter {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            font-size: 1.1em;
+            color: #484f58;
+        }
+        .company-logo {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            z-index: 1000;
+            max-height: 50px;
+            width: auto;
+            opacity: 0.9;
+        }
+        .flow-box {
+            background: #21262d;
+            border: 2px solid #30363d;
+            border-radius: 10px;
+            padding: 15px 25px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .flow-arrow {
+            font-size: 1.8em;
+            color: #58a6ff;
+        }
+        .center {
+            text-align: center;
+        }
+        ul {
+            list-style: none;
+            margin-left: 20px;
+        }
+        ul li {
+            margin: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        ul li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #58a6ff;
+        }
+        .icon { font-size: 1.3em; margin-right: 8px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 1em;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #30363d;
+        }
+        th {
+            background: #21262d;
+            color: #58a6ff;
+        }
+        .subtitle {
+            font-size: 1.5em;
+            color: #8b949e;
+            margin-top: 15px;
+        }
+        @media print {
+            .slide { display: flex !important; page-break-after: always; height: auto; min-height: 100vh; }
+            .nav, .slide-counter { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <img src="Leadventure.png" alt="Leadventure" class="company-logo">
+
+    <!-- Slide 1: Title -->
+    <div class="slide active">
+        <div class="center" style="margin-top: 15vh;">
+            <h1>🏗️ Framework Architecture</h1>
+            <p class="subtitle">AI Goal Coach Test Automation Suite</p>
+            <div style="margin-top: 40px;">
+                <span class="badge badge-test">Test Files</span>
+                <span class="badge badge-mock">Mocks</span>
+                <span class="badge badge-type">Types</span>
+                <span class="badge badge-util">Utilities</span>
+                <span class="badge badge-config">Config</span>
+                <span class="badge badge-doc">Documentation</span>
+            </div>
+            <p style="margin-top: 60px; color: #484f58;">Comprehensive Guide to Project Structure</p>
+        </div>
+    </div>
+
+    <!-- Slide 2: Complete Project Tree -->
+    <div class="slide">
+        <h2>📁 Complete Project Structure</h2>
+        <div class="two-column">
+            <div class="column">
+                <h3>📂 Root Files</h3>
+                <table>
+                    <tr><th>File</th><th>Purpose</th></tr>
+                    <tr><td><span class="config">📄 .env</span></td><td>Environment variables (HF_TOKEN)</td></tr>
+                    <tr><td><span class="config">📄 .gitignore</span></td><td>Git ignore rules</td></tr>
+                    <tr><td><span class="config">📄 package.json</span></td><td>Dependencies & scripts</td></tr>
+                    <tr><td><span class="config">📄 playwright.config.ts</span></td><td>Playwright configuration</td></tr>
+                    <tr><td><span class="config">📄 Jenkinsfile</span></td><td>CI/CD pipeline</td></tr>
+                    <tr><td><span class="doc">📄 README.md</span></td><td>Project documentation</td></tr>
+                    <tr><td><span class="doc">📄 TEST_STRATEGY.md</span></td><td>Test strategy document</td></tr>
+                    <tr><td><span class="doc">📄 BUGS.md</span></td><td>Bug documentation</td></tr>
+                </table>
+            </div>
+            <div class="column">
+                <h3>📂 Folders</h3>
+                <table>
+                    <tr><th>Folder</th><th>Contents</th></tr>
+                    <tr><td><span class="folder">📁 .github/workflows/</span></td><td>playwright.yml (GitHub Actions)</td></tr>
+                    <tr><td><span class="folder">📁 presentation/</span></td><td>HTML presentations</td></tr>
+                    <tr><td><span class="folder">📁 tests/ai-goal-coach/</span></td><td>Main test suite</td></tr>
+                </table>
+                <h3 style="margin-top:20px;">📂 tests/ai-goal-coach/ Subfolders</h3>
+                <table>
+                    <tr><th>Folder</th><th>Purpose</th></tr>
+                    <tr><td><span class="folder">📁 api/</span></td><td>Real API client</td></tr>
+                    <tr><td><span class="folder">📁 data/</span></td><td>Test data</td></tr>
+                    <tr><td><span class="folder">📁 mocks/</span></td><td>Mock implementation</td></tr>
+                    <tr><td><span class="folder">📁 types/</span></td><td>TypeScript definitions</td></tr>
+                    <tr><td><span class="folder">📁 utils/</span></td><td>Utilities</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Root Configuration Files -->
+    <div class="slide">
+        <h2>⚙️ Root Configuration Files</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 playwright.config.ts <span class="badge badge-config">Config</span></h4>
+                    <p>Main Playwright configuration</p>
+                    <ul>
+                        <li>Test directory settings</li>
+                        <li>Browser configurations</li>
+                        <li>Timeout settings</li>
+                        <li>Reporter options (HTML, JUnit)</li>
+                        <li>Loads .env automatically</li>
+                    </ul>
+                </div>
+                <div class="file-card">
+                    <h4>📄 package.json <span class="badge badge-config">Config</span></h4>
+                    <p>Node.js project configuration</p>
+                    <ul>
+                        <li>Project dependencies</li>
+                        <li>Playwright version</li>
+                        <li>npm scripts</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 .env <span class="badge badge-config">Secret</span></h4>
+                    <p>Environment variables (git-ignored)</p>
+                    <div class="code-block">
+HF_TOKEN=hf_xxxxx...
+USE_REAL_API=true
+                    </div>
+                </div>
+                <div class="file-card">
+                    <h4>📄 Jenkinsfile <span class="badge badge-config">CI/CD</span></h4>
+                    <p>Jenkins pipeline definition</p>
+                    <ul>
+                        <li>Build stages</li>
+                        <li>Test execution</li>
+                        <li>Report publishing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: Documentation Files -->
+    <div class="slide">
+        <h2>📚 Documentation Files</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 TEST_STRATEGY.md <span class="badge badge-doc">364 lines</span></h4>
+                    <p>Comprehensive test strategy covering:</p>
+                    <ul>
+                        <li>Test scope & categories</li>
+                        <li>Adversarial testing approach</li>
+                        <li>CI/CD integration plan</li>
+                        <li>Regression strategy</li>
+                        <li>Risk mitigation</li>
+                        <li>Observability & monitoring</li>
+                    </ul>
+                </div>
+                <div class="file-card">
+                    <h4>📄 README.md <span class="badge badge-doc">Main</span></h4>
+                    <p>Project overview & quick start guide</p>
+                    <ul>
+                        <li>Installation instructions</li>
+                        <li>Running tests commands</li>
+                        <li>CI/CD setup guide</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 BUGS.md <span class="badge badge-doc">458 lines</span></h4>
+                    <p>Documents 5 identified bugs:</p>
+                    <table>
+                        <tr><th>Bug</th><th>Severity</th></tr>
+                        <tr><td>Null refined_goal</td><td>🔴 Critical</td></tr>
+                        <tr><td>Empty key_results</td><td>🟠 High</td></tr>
+                        <tr><td>Score out of range</td><td>🟠 High</td></tr>
+                        <tr><td>Gibberish hallucination</td><td>🔴 Critical</td></tr>
+                        <tr><td>Null in key_results</td><td>🟡 Medium</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Test Suite Structure -->
+    <div class="slide">
+        <h2>🧪 Test Suite Structure (tests/ai-goal-coach/)</h2>
+        <div class="two-column">
+            <div class="column">
+                <h3>📝 Test Specification Files</h3>
+                <table>
+                    <tr><th>File</th><th>Tests</th><th>Purpose</th></tr>
+                    <tr><td><span class="test">📄 schema.spec.ts</span></td><td>45+</td><td>JSON schema validation</td></tr>
+                    <tr><td><span class="test">📄 adversarial.spec.ts</span></td><td>30+</td><td>Security & edge cases</td></tr>
+                    <tr><td><span class="test">📄 functional.spec.ts</span></td><td>40+</td><td>Business logic</td></tr>
+                    <tr><td><span class="test">📄 performance.spec.ts</span></td><td>20+</td><td>Load & latency</td></tr>
+                    <tr><td><span class="test">📄 integration.spec.ts</span></td><td>8</td><td>Real Hugging Face API</td></tr>
+                    <tr><td><span class="doc">📄 README.md</span></td><td>—</td><td>Documentation</td></tr>
+                </table>
+            </div>
+            <div class="column">
+                <h3>📂 Supporting Folders</h3>
+                <table>
+                    <tr><th>Folder</th><th>File</th><th>Purpose</th></tr>
+                    <tr><td><span class="folder">📁 api/</span></td><td><span class="file">realApiClient.ts</span></td><td>Real API client</td></tr>
+                    <tr><td><span class="folder">📁 data/</span></td><td><span class="file">testData.ts</span></td><td>Test data</td></tr>
+                    <tr><td><span class="folder">📁 mocks/</span></td><td><span class="file">goalCoachMock.ts</span></td><td>Mock implementation</td></tr>
+                    <tr><td><span class="folder">📁 types/</span></td><td><span class="file">goalCoach.types.ts</span></td><td>TypeScript definitions</td></tr>
+                    <tr><td><span class="folder">📁 utils/</span></td><td><span class="file">schemaValidator.ts</span></td><td>Utilities</td></tr>
+                </table>
+                <div style="margin-top: 20px; padding: 15px; background: #21262d; border-radius: 8px;">
+                    <p style="color: #58a6ff; font-weight: bold;">📊 Total: 192 Tests</p>
+                    <p style="color: #8b949e;">184 mock tests + 8 integration tests</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Test Spec Files -->
+    <div class="slide">
+        <h2>📝 Test Specification Files (*.spec.ts)</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 schema.spec.ts <span class="badge badge-test">45+ tests</span></h4>
+                    <p>Validates API response structure:</p>
+                    <ul>
+                        <li>Required fields exist</li>
+                        <li>Field types correct</li>
+                        <li>Array bounds (3-5 key_results)</li>
+                        <li>Score range (1-10)</li>
+                        <li>No null values</li>
+                    </ul>
+                </div>
+                <div class="file-card">
+                    <h4>📄 adversarial.spec.ts <span class="badge badge-test">30+ tests</span></h4>
+                    <p>Security & edge case testing:</p>
+                    <ul>
+                        <li>SQL injection attacks</li>
+                        <li>XSS script injection</li>
+                        <li>Prompt injection</li>
+                        <li>Gibberish detection</li>
+                        <li>Profanity filtering</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 functional.spec.ts <span class="badge badge-test">40+ tests</span></h4>
+                    <p>Business logic validation:</p>
+                    <ul>
+                        <li>SMART goal generation</li>
+                        <li>Confidence accuracy</li>
+                        <li>Category detection</li>
+                        <li>Regression with golden data</li>
+                    </ul>
+                </div>
+                <div class="file-card">
+                    <h4>📄 performance.spec.ts <span class="badge badge-test">20+ tests</span></h4>
+                    <p>Performance benchmarks:</p>
+                    <ul>
+                        <li>Single request latency</li>
+                        <li>Concurrent load (10/50/100)</li>
+                        <li>P50/P99 measurements</li>
+                        <li>Throughput testing</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 7: API Folder -->
+    <div class="slide">
+        <h2>🌐 api/ Folder - Real API Client</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 realApiClient.ts <span class="badge badge-util">API</span></h4>
+                    <p>Connects to Hugging Face Inference API</p>
+                </div>
+                <h3>Key Components:</h3>
+                <ul>
+                    <li><span class="highlight">RealGoalCoachAPI</span> class</li>
+                    <li>OpenAI-compatible chat format</li>
+                    <li>Response normalization</li>
+                    <li>Error handling</li>
+                    <li>Token validation</li>
+                </ul>
+                <h3>Configuration:</h3>
+                <div class="code-block">
+Model: Qwen/Qwen2.5-72B-Instruct
+Endpoint: router.huggingface.co/v1
+Timeout: 60 seconds
+                </div>
+            </div>
+            <div class="column">
+                <h3>Usage Example:</h3>
+                <div class="code-block" style="font-size: 0.9em;">
+<span style="color:#ff7b72">import</span> { RealGoalCoachAPI } <span style="color:#ff7b72">from</span> <span style="color:#a5d6ff">'./api/realApiClient'</span>;
+
+<span style="color:#8b949e">// Create client (reads HF_TOKEN from env)</span>
+<span style="color:#ff7b72">const</span> api = <span style="color:#ff7b72">new</span> <span style="color:#d2a8ff">RealGoalCoachAPI</span>();
+
+<span style="color:#8b949e">// Process a goal</span>
+<span style="color:#ff7b72">const</span> response = <span style="color:#ff7b72">await</span> api.<span style="color:#d2a8ff">processGoal</span>({
+  goal: <span style="color:#a5d6ff">'I want to improve sales'</span>
+});
+
+<span style="color:#8b949e">// Returns:</span>
+<span style="color:#8b949e">// {</span>
+<span style="color:#8b949e">//   refined_goal: "Increase quarterly..."</span>
+<span style="color:#8b949e">//   key_results: ["...", "...", "..."]</span>
+<span style="color:#8b949e">//   confidence_score: 8</span>
+<span style="color:#8b949e">// }</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 8: Mocks Folder -->
+    <div class="slide">
+        <h2>🎭 mocks/ Folder - Mock API Implementation</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 goalCoachMock.ts <span class="badge badge-mock">Mock</span></h4>
+                    <p>Simulates AI Goal Coach behavior for fast, reliable testing</p>
+                </div>
+                <h3>Key Functions:</h3>
+                <ul>
+                    <li><span class="highlight">MockGoalCoachAPI</span> - Configurable mock class</li>
+                    <li><span class="highlight">generateMockResponse()</span> - Generate responses</li>
+                    <li><span class="highlight">detectAdversarialInput()</span> - Security detection</li>
+                    <li><span class="highlight">isGibberish()</span> - Nonsense detection</li>
+                    <li><span class="highlight">calculateConfidenceScore()</span> - Score algorithm</li>
+                    <li><span class="highlight">detectGoalCategory()</span> - Category matching</li>
+                </ul>
+            </div>
+            <div class="column">
+                <h3>Configuration Options:</h3>
+                <div class="code-block" style="font-size: 0.9em;">
+<span style="color:#ff7b72">const</span> api = <span style="color:#ff7b72">new</span> <span style="color:#d2a8ff">MockGoalCoachAPI</span>({
+  <span style="color:#79c0ff">latencyMs</span>: <span style="color:#a5d6ff">100</span>,      <span style="color:#8b949e">// Simulate delay</span>
+  <span style="color:#79c0ff">errorRate</span>: <span style="color:#a5d6ff">0.1</span>,      <span style="color:#8b949e">// 10% errors</span>
+  <span style="color:#79c0ff">simulateBugs</span>: <span style="color:#a5d6ff">true</span>  <span style="color:#8b949e">// Enable bugs</span>
+});
+                </div>
+                <h3>Detection Patterns:</h3>
+                <ul>
+                    <li>SQL: <code>'; DROP TABLE</code></li>
+                    <li>XSS: <code>&lt;script&gt;</code></li>
+                    <li>Prompt: <code>ignore instructions</code></li>
+                    <li>Command: <code>; rm -rf</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 9: Types Folder -->
+    <div class="slide">
+        <h2>📋 types/ Folder - TypeScript Definitions</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 goalCoach.types.ts <span class="badge badge-type">Types</span></h4>
+                    <p>Type-safe interfaces for the entire project</p>
+                </div>
+                <h3>Request Interface:</h3>
+                <div class="code-block">
+<span style="color:#ff7b72">interface</span> <span style="color:#79c0ff">GoalCoachRequest</span> {
+  <span style="color:#79c0ff">goal</span>: <span style="color:#a5d6ff">string</span>;
+}
+                </div>
+                <h3>Response Interface:</h3>
+                <div class="code-block">
+<span style="color:#ff7b72">interface</span> <span style="color:#79c0ff">GoalCoachResponse</span> {
+  <span style="color:#79c0ff">refined_goal</span>: <span style="color:#a5d6ff">string</span>;
+  <span style="color:#79c0ff">key_results</span>: <span style="color:#a5d6ff">string[]</span>;
+  <span style="color:#79c0ff">confidence_score</span>: <span style="color:#a5d6ff">number</span>;
+}
+                </div>
+            </div>
+            <div class="column">
+                <h3>Why TypeScript Types?</h3>
+                <ul>
+                    <li>Compile-time error checking</li>
+                    <li>IDE auto-completion</li>
+                    <li>Self-documenting code</li>
+                    <li>Refactoring safety</li>
+                </ul>
+                <h3>Additional Types:</h3>
+                <ul>
+                    <li><span class="highlight">MockConfig</span> - Mock options</li>
+                    <li><span class="highlight">ValidationResult</span> - Schema check</li>
+                    <li><span class="highlight">GoalCategory</span> - Goal types</li>
+                    <li><span class="highlight">TestDataItem</span> - Test case</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 10: Data Folder -->
+    <div class="slide">
+        <h2>📊 data/ Folder - Test Data</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 testData.ts <span class="badge badge-util">Data</span></h4>
+                    <p>Centralized test data for all test files</p>
+                </div>
+                <h3>Data Exports:</h3>
+                <table>
+                    <tr><th>Export</th><th>Purpose</th></tr>
+                    <tr><td><span class="highlight">VALID_GOALS</span></td><td>Valid goal test cases</td></tr>
+                    <tr><td><span class="highlight">EDGE_CASE_INPUTS</span></td><td>Boundary conditions</td></tr>
+                    <tr><td><span class="highlight">ADVERSARIAL_INPUTS</span></td><td>Attack vectors</td></tr>
+                    <tr><td><span class="highlight">GOLDEN_DATASET</span></td><td>Regression baseline</td></tr>
+                </table>
+            </div>
+            <div class="column">
+                <h3>Example - Valid Goals:</h3>
+                <div class="code-block" style="font-size: 0.85em;">
+<span style="color:#ff7b72">export const</span> <span style="color:#79c0ff">VALID_GOALS</span> = [
+  {
+    <span style="color:#79c0ff">input</span>: <span style="color:#a5d6ff">'I want to improve sales'</span>,
+    <span style="color:#79c0ff">expectedCategory</span>: <span style="color:#a5d6ff">'sales'</span>,
+    <span style="color:#79c0ff">minConfidence</span>: <span style="color:#a5d6ff">7</span>
+  },
+  {
+    <span style="color:#79c0ff">input</span>: <span style="color:#a5d6ff">'Learn Python programming'</span>,
+    <span style="color:#79c0ff">expectedCategory</span>: <span style="color:#a5d6ff">'learning'</span>,
+    <span style="color:#79c0ff">minConfidence</span>: <span style="color:#a5d6ff">8</span>
+  }
+];
+                </div>
+                <h3>Benefits:</h3>
+                <ul>
+                    <li>Single source of truth</li>
+                    <li>Easy to update</li>
+                    <li>Reusable across tests</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 11: Utils Folder -->
+    <div class="slide">
+        <h2>🔧 utils/ Folder - Utilities</h2>
+        <div class="two-column">
+            <div class="column">
+                <div class="file-card">
+                    <h4>📄 schemaValidator.ts <span class="badge badge-util">Util</span></h4>
+                    <p>Validates API responses against expected schema</p>
+                </div>
+                <h3>Key Functions:</h3>
+                <ul>
+                    <li><span class="highlight">validateSchema()</span> - Full validation</li>
+                    <li><span class="highlight">isValidGoalCoachResponse()</span> - Type guard</li>
+                    <li><span class="highlight">validateSMARTGoal()</span> - SMART check</li>
+                    <li><span class="highlight">validateKeyResults()</span> - Array check</li>
+                </ul>
+            </div>
+            <div class="column">
+                <h3>Usage Example:</h3>
+                <div class="code-block" style="font-size: 0.9em;">
+<span style="color:#ff7b72">import</span> { validateSchema } <span style="color:#ff7b72">from</span> <span style="color:#a5d6ff">'./utils/schemaValidator'</span>;
+
+<span style="color:#ff7b72">const</span> result = <span style="color:#d2a8ff">validateSchema</span>(response);
+
+<span style="color:#ff7b72">if</span> (result.<span style="color:#79c0ff">isValid</span>) {
+  console.<span style="color:#d2a8ff">log</span>(<span style="color:#a5d6ff">'✅ Valid response'</span>);
+} <span style="color:#ff7b72">else</span> {
+  console.<span style="color:#d2a8ff">log</span>(<span style="color:#a5d6ff">'❌ Errors:'</span>, result.<span style="color:#79c0ff">errors</span>);
+}
+
+<span style="color:#8b949e">// Returns:</span>
+<span style="color:#8b949e">// { isValid: false, errors: ['...'] }</span>
+                </div>
+                <h3>Validation Checks:</h3>
+                <ul>
+                    <li>refined_goal is non-empty string</li>
+                    <li>key_results has 3-5 items</li>
+                    <li>confidence_score is 1-10</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 12: Data Flow Diagram -->
+    <div class="slide">
+        <h2>🔄 How It All Works Together</h2>
+        <div style="display: flex; flex-direction: column; align-items: center; margin-top: 30px;">
+            <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                <div class="flow-box"><span class="icon">📝</span><br>Test Spec<br><small>schema.spec.ts</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box"><span class="icon">📋</span><br>Types<br><small>goalCoach.types.ts</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box"><span class="icon">🎭</span><br>Mock API<br><small>goalCoachMock.ts</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box"><span class="icon">✅</span><br>Validator<br><small>schemaValidator.ts</small></div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px; margin: 15px 0;">
+                <div class="flow-box"><span class="icon">📊</span><br>Test Data<br><small>testData.ts</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box"><span class="icon">🧪</span><br>Test Execution<br><small>Playwright</small></div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-box"><span class="icon">📈</span><br>HTML Report<br><small>playwright-report/</small></div>
+            </div>
+            <div style="margin-top: 30px; display: flex; gap: 20px;">
+                <div class="flow-box" style="border-color: #238636;">
+                    <span class="icon">🌐</span><br>Real API<br><small>realApiClient.ts</small>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <span class="flow-arrow">↔</span>
+                    <small style="color: #8b949e;">Optional</small>
+                </div>
+                <div class="flow-box" style="border-color: #238636;">
+                    <span class="icon">🤖</span><br>Hugging Face<br><small>Qwen 72B</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 13: Running the Framework -->
+    <div class="slide">
+        <h2>▶️ Running the Framework</h2>
+        <div class="two-column">
+            <div class="column">
+                <h3>Basic Commands:</h3>
+                <div class="code-block">
+<span style="color:#8b949e"># Run all 192 tests</span>
+npx playwright test tests/ai-goal-coach/
+
+<span style="color:#8b949e"># Run specific test file</span>
+npx playwright test schema.spec.ts
+
+<span style="color:#8b949e"># Run with UI mode</span>
+npx playwright test --ui
+
+<span style="color:#8b949e"># Run headed (see browser)</span>
+npx playwright test --headed
+
+<span style="color:#8b949e"># Show HTML report</span>
+npx playwright show-report
+                </div>
+            </div>
+            <div class="column">
+                <h3>Real API Testing:</h3>
+                <div class="code-block">
+<span style="color:#8b949e"># With .env file (automatic)</span>
+npx playwright test integration.spec.ts
+
+<span style="color:#8b949e"># Or set manually:</span>
+$env:HF_TOKEN = "hf_xxx..."
+$env:USE_REAL_API = "true"
+npx playwright test integration.spec.ts
+                </div>
+                <h3>CI/CD:</h3>
+                <div class="code-block">
+<span style="color:#8b949e"># GitHub Actions - automatic on push</span>
+<span style="color:#8b949e"># Jenkins - use Jenkinsfile</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 14: Summary -->
+    <div class="slide">
+        <h2>📊 Framework Summary</h2>
+        <table style="font-size: 1.1em;">
+            <tr>
+                <th>Component</th>
+                <th>Files</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td><span class="icon">📄</span> Config</td>
+                <td>playwright.config.ts, .env, Jenkinsfile</td>
+                <td>Project configuration</td>
+            </tr>
+            <tr>
+                <td><span class="icon">📚</span> Docs</td>
+                <td>README, TEST_STRATEGY, BUGS.md</td>
+                <td>Documentation (1000+ lines)</td>
+            </tr>
+            <tr>
+                <td><span class="icon">🧪</span> Tests</td>
+                <td>5 spec files (192 tests)</td>
+                <td>Schema, Security, Functional, Performance</td>
+            </tr>
+            <tr>
+                <td><span class="icon">🎭</span> Mocks</td>
+                <td>goalCoachMock.ts</td>
+                <td>Configurable mock API</td>
+            </tr>
+            <tr>
+                <td><span class="icon">🌐</span> API</td>
+                <td>realApiClient.ts</td>
+                <td>Hugging Face integration</td>
+            </tr>
+            <tr>
+                <td><span class="icon">📋</span> Types</td>
+                <td>goalCoach.types.ts</td>
+                <td>TypeScript interfaces</td>
+            </tr>
+            <tr>
+                <td><span class="icon">🔧</span> Utils</td>
+                <td>schemaValidator.ts</td>
+                <td>Validation utilities</td>
+            </tr>
+            <tr>
+                <td><span class="icon">📊</span> Data</td>
+                <td>testData.ts</td>
+                <td>Centralized test data</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Slide 15: Q&A -->
+    <div class="slide">
+        <div class="center" style="margin-top: 15vh;">
+            <h1>❓ Questions?</h1>
+            <p class="subtitle">Framework Architecture Deep Dive Complete</p>
+            <div style="margin-top: 50px;">
+                <p>GitHub: <span class="highlight">github.com/DeepakManjeet/ai-goal-coach-playwright</span></p>
+            </div>
+            <div style="margin-top: 30px;">
+                <span class="badge badge-test">192 Tests</span>
+                <span class="badge badge-doc">1000+ Lines Docs</span>
+                <span class="badge badge-config">CI/CD Ready</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav">
+        <button onclick="prevSlide()">◀ Previous</button>
+        <button onclick="nextSlide()">Next ▶</button>
+    </div>
+    <div class="slide-counter">
+        <span id="currentSlide">1</span> / <span id="totalSlides">15</span>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+        }
+        function nextSlide() { showSlide(currentSlide + 1); }
+        function prevSlide() { showSlide(currentSlide - 1); }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') {
+                if (e.clientX > window.innerWidth / 2) nextSlide();
+                else prevSlide();
+            }
+        });
+    </script>
+</body>
+</html>
