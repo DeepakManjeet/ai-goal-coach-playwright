@@ -1,0 +1,80 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Playwright Tests",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"playwright",
+				"test"
+			],
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Playwright Tests (UI Mode)",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"playwright",
+				"test",
+				"--ui"
+			],
+			"group": "test",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Playwright Tests (Debug)",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"playwright",
+				"test",
+				"--debug"
+			],
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Playwright Tests (Headed)",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"playwright",
+				"test",
+				"--headed"
+			],
+			"group": "test",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Install Playwright Browsers",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"playwright",
+				"install"
+			],
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Show Playwright Report",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"playwright",
+				"show-report"
+			],
+			"group": "test",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
